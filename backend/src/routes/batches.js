@@ -21,8 +21,16 @@ router.post("/", async (req, res) => {
     await client.query("BEGIN");
 
     //Auto generate batch number
-    const countResult = await client.query("SELECT COUNT(*) from raw_batches");
-    const count = parseInt(countResult.rows[0].count) + 1;
+    const lastBatch = await client.query(
+      "SELECT batch_no FROM raw_batches ORDER BY id DESC LIMIT 1"
+    );
+
+    let count = 1;
+    if (lastBatch.rows.length > 0) {
+      const last = lastBatch.rows[0].batch_no;
+      count = parseInt(last.split("-")[1]) + 1;
+    }
+
     const batch_no = `RAW-${String(count).padStart(3, "0")}`;
     //padStart just formats the number to be 3 digits only
 
@@ -88,7 +96,7 @@ router.get("/", async (req, res) => {
     return acc;
   }, {});
   const result = Object.values(grouped);
-  res.json(result)
+  res.json(result);
 });
 
 module.exports = router;
